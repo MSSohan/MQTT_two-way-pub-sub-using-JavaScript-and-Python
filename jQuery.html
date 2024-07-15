@@ -6,6 +6,18 @@
     <title>MQTT with jQuery</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        .message-list {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .message-list h2 {
+            margin-top: 0;
+        }
+    </style>
 </head>
 <body>
     <h1>MQTT Client with jQuery</h1>
@@ -22,8 +34,20 @@
     
     <button id="publish">Publish Message</button>
     
-    <h2>Received Messages:</h2>
-    <ul id="messages"></ul>
+    <div class="message-list">
+        <h2>Received Messages:</h2>
+        <ul id="received-messages"></ul>
+    </div>
+    
+    <div class="message-list">
+        <h2>Sent Messages:</h2>
+        <ul id="sent-messages"></ul>
+    </div>
+    
+    <div class="message-list">
+        <h2>Return Responses:</h2>
+        <ul id="return-responses"></ul>
+    </div>
 
     <script>
         $(document).ready(function() {
@@ -60,17 +84,21 @@
             // Handle incoming messages
             client.on('message', (topic, message) => {
                 console.log(`Received message on topic: ${topic} with payload: ${message.toString()}`);
-                $('#messages').append(`<li>Topic: ${topic}, Message: ${message.toString()}</li>`);
+                $('#received-messages').append(`<li>Topic: ${topic}, Message: ${message.toString()}</li>`);
+                
                 try {
                     const data = JSON.parse(message.toString());
                     const deviceId = data.device_id;
                     const responseTopic = `uprint/kiosk/${deviceId}`;
                     const responseMessage = JSON.stringify({ response: 'Message received', device_id: deviceId });
+                    
+                    // Publish a response message
                     client.publish(responseTopic, responseMessage, { qos: 1 }, (err) => {
                         if (err) {
                             console.error('Publish error:', err);
                         } else {
                             console.log(`Sent return response '${responseMessage}' to '${responseTopic}'`);
+                            $('#return-responses').append(`<li>Topic: ${responseTopic}, Message: ${responseMessage}</li>`);
                         }
                     });
                 } catch (e) {
@@ -83,12 +111,14 @@
                 const topic = $('#topic').val();
                 const payload = $('#message').val();
                 console.log(`Attempting to publish to topic: ${topic} with payload: ${payload}`);
+                
                 if (client.connected && topic && payload) {
                     client.publish(topic, payload, { qos: 1 }, (err) => {
                         if (err) {
                             console.error(`Failed to send message to topic ${topic}:`, err);
                         } else {
                             console.log(`Sent '${payload}' to topic '${topic}'`);
+                            $('#sent-messages').append(`<li>Topic: ${topic}, Message: ${payload}</li>`);
                         }
                     });
                 } else {
