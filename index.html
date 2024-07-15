@@ -29,7 +29,7 @@
             // Log connection status
             client.on('connect', () => {
                 console.log('Connected successfully');
-                const topic = 'uprint/kiosk';
+                const topic = 'uprint/kiosk'; // Default subscription topic
                 client.subscribe(topic, { qos: 1 }, (err) => {
                     if (err) {
                         console.error('Subscription error:', err);
@@ -78,7 +78,15 @@
         });
 
         // Function to publish a message
-        function publishMessage(topic, payload) {
+        function publishMessage() {
+            const topic = document.getElementById('topicInput').value;
+            const payload = document.getElementById('messageInput').value;
+
+            if (!topic || !payload) {
+                console.error('Topic and message cannot be empty');
+                return;
+            }
+
             client.publish(topic, payload, { qos: 1 }, (err) => {
                 if (err) {
                     console.error(`Failed to send message to topic ${topic}:`, err);
@@ -91,6 +99,14 @@
 </head>
 <body>
     <h1>MQTT.js Client</h1>
-    <button onclick="publishMessage('uprint/kiosk', 'Hello MQTT')">Publish Message</button>
+    <div>
+        <label for="topicInput">Topic:</label>
+        <input type="text" id="topicInput" placeholder="Enter topic" />
+    </div>
+    <div>
+        <label for="messageInput">Message:</label>
+        <input type="text" id="messageInput" placeholder="Enter message" />
+    </div>
+    <button onclick="publishMessage()">Publish Message</button>
 </body>
 </html>
