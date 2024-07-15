@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT with jQuery</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <h1>MQTT Client with jQuery</h1>
+    
+    <div>
+        <label for="topic">Topic:</label>
+        <input type="text" id="topic" placeholder="Enter topic">
+    </div>
+    
+    <div>
+        <label for="message">Message:</label>
+        <input type="text" id="message" placeholder="Enter message">
+    </div>
+    
+    <button id="publish">Publish Message</button>
+    
+    <h2>Received Messages:</h2>
+    <ul id="messages"></ul>
+
+    <script>
+        $(document).ready(function() {
+            // MQTT Configuration
+            const config = {
+                MQTT_USER: '', // Your MQTT username
+                MQTT_PASSWORD: '', // Your MQTT password
+                MQTT_SERVER: 'broker.emqx.io', // Your MQTT broker URL
+                MQTT_PORT: 8084, // WebSocket port for MQTT over WebSocket
+                MQTT_KEEPALIVE: 60
+            };
+
+            // Create MQTT client instance
+            const client = mqtt.connect(`wss://${config.MQTT_SERVER}:${config.MQTT_PORT}/mqtt`, {
+                username: config.MQTT_USER,
+                password: config.MQTT_PASSWORD,
+                keepalive: config.MQTT_KEEPALIVE,
+                reconnectPeriod: 1000 // Automatically reconnect
+            });
+
+            // Handle successful connection
+            client.on('connect', () => {
+                console.log('Connected successfully');
+                const topic = 'uprint/kiosk';
+                client.subscribe(topic, { qos: 1 }, (err) => {
+                    if (err) {
+                        console.error('Subscription error:', err);
+                    } else {
+                        console.log(`Subscribed to topic '${topic}'`);
+                    }
+                });
+            });
+
+            // Handle incoming messages
+            client.on('message', (topic, message) => {
+                console.log(`Received message on topic: ${topic} with payload: ${message.toString()}`);
+                $('#messages').append(`<li>Topic: ${topic}, Message: ${message.toString()}</li>`);
+                try {
+                    const data = JSON.parse(message.toString());
+                    const deviceId = data.device_id;
+                    const responseTopic = `uprint/kiosk/${deviceId}`;
+                    const responseMessage = JSON.stringify({ response: 'Message received', device_id: deviceId });
+                    client.publish(responseTopic, responseMessage, { qos: 1 }, (err) => {
+                        if (err) {
+                            console.error('Publish error:', err);
+                        } else {
+                            console.log(`Sent return response '${responseMessage}' to '${responseTopic}'`);
+                        }
+                    });
+                } catch (e) {
+                    console.error('Invalid message format:', e);
+                }
+            });
+
+            // Publish message when button is clicked
+            $('#publish').click(() => {
+                const topic = $('#topic').val();
+                const payload = $('#message').val();
+                console.log(`Attempting to publish to topic: ${topic} with payload: ${payload}`);
+                if (client.connected && topic && payload) {
+                    client.publish(topic, payload, { qos: 1 }, (err) => {
+                        if (err) {
+                            console.error(`Failed to send message to topic ${topic}:`, err);
+                        } else {
+                            console.log(`Sent '${payload}' to topic '${topic}'`);
+                        }
+                    });
+                } else {
+                    console.log('Client not connected or invalid topic/payload');
+                }
+            });
+
+            // Handle window unload
+            $(window).on('beforeunload', () => {
+                console.log('Exiting');
+                client.end();
+            });
+        });
+    </script>
+</body>
+</html>
