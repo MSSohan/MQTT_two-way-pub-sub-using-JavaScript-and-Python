@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paho MQTT Client</title>
+    <script src="https://unpkg.com/paho-mqtt/mqttws31.min.js"></script>
+    <script>
+        // Configuration settings
+        const config = {
+            MQTT_USER: '', // Your MQTT username
+            MQTT_PASSWORD: '', // Your MQTT password
+            MQTT_SERVER: 'broker.emqx.io', // Your MQTT broker URL
+            MQTT_PORT: 8083, // WebSocket port
+            MQTT_KEEPALIVE: 60
+        };
+
+        // Callback function when the client connects to the broker
+        function onConnect() {
+            console.log('Connected successfully');
+            const topic = 'uprint/kiosk';
+            client.subscribe(topic, { qos: 1 });
+        }
+
+        // Callback function when a message is received
+        function onMessage(message) {
+            const topic = message.destinationName;
+            const payload = message.payloadString;
+            console.log(`Received message on topic: ${topic} with payload: ${payload}`);
+            try {
+                const data = JSON.parse(payload);
+                const deviceId = data.device_id;
+                const responseTopic = `uprint/kiosk/${deviceId}`;
+                const responseMessage = JSON.stringify({ response: 'Message received', device_id: deviceId });
+                const response = new Paho.MQTT.Message(responseMessage);
+                response.destinationName = responseTopic;
+                client.send(response);
+                console.log(`Sent return response '${responseMessage}' to '${responseTopic}'`);
+            } catch (e) {
+                console.log('Invalid message format');
+            }
+        }
+
+        // Create an MQTT client instance
+        const client = new Paho.MQTT.Client(config.MQTT_SERVER, Number(config.MQTT_PORT), 'clientId-' + Math.random());
+
+        // Set callback handlers
+        client.onConnectionLost = (responseObject) => {
+            if (responseObject.errorCode !== 0) {
+                console.log('Connection lost:', responseObject.errorMessage);
+            }
+        };
+        client.onMessageArrived = onMessage;
+
+        // Connect to the MQTT server
+        client.connect({
+            onSuccess: onConnect,
+            userName: config.MQTT_USER,
+            password: config.MQTT_PASSWORD,
+            keepAliveInterval: config.MQTT_KEEPALIVE
+        });
+
+        // Function to publish a message
+        function publishMessage(topic, payload) {
+            const message = new Paho.MQTT.Message(payload);
+            message.destinationName = topic;
+            client.send(message);
+            console.log(`Sent '${payload}' to topic '${topic}'`);
+        }
+
+        // Handle process exit
+        window.addEventListener('beforeunload', () => {
+            console.log('Exiting');
+            client.disconnect();
+        });
+    </script>
+</head>
+<body>
+    <h1>Paho MQTT Client</h1>
+    <button onclick="publishMessage('uprint/kiosk', 'Hello MQTT')">Publish Message</button>
+</body>
+</html>
