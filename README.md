@@ -37,3 +37,11 @@ node server_node_js.js
    <browser-name> jQuery.html
    ```
    ==> Or, just click F5 of the keyboard
+
+3. Plain JavaScript Server:
+   ==> No need to install library again, if already installed
+   ==> Run the Server
+   ```
+   <browser-name> index.html
+   ```
+   ==> Or, just click F5 of the keyboard
