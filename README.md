@@ -16,3 +16,15 @@ pip install paho-mqtt
 ```
 python client.py
 ```
+
+### Server Installing Process:
+1. For Node.js Server
+   
+   ==> Create npm env with library
+```
+npm install mqtt fs
+```
+==> Run the NodeJs server
+```
+node server_node_js.js
+```
