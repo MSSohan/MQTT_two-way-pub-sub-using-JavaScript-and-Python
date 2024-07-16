@@ -24,7 +24,16 @@ python client.py
 ```
 npm install mqtt fs
 ```
-==> Run the NodeJs server
+   ==> Run the NodeJs server
 ```
 node server_node_js.js
 ```
+
+2. jQuery Server:
+
+   ==> No need to install library again, if already installed
+   ==> Run the Server
+   ```
+   <browser-name> jQuery.html
+   ```
+   ==> Or, just click F5 of the keyboard
